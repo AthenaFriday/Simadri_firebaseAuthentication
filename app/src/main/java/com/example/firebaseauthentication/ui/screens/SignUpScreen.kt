@@ -1,20 +1,12 @@
 package com.example.firebaseauthentication.ui.screens
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.*
-import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
+import androidx.compose.ui.*
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.example.firebaseauthentication.data.AuthState
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.ui.text.input.PasswordVisualTransformation
 
 @Composable
 fun SignUpScreen(
@@ -26,28 +18,53 @@ fun SignUpScreen(
     var password by remember { mutableStateOf("") }
 
     Column(
-        modifier = Modifier.fillMaxSize().padding(16.dp),
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text("Sign Up", style = MaterialTheme.typography.titleLarge)
         Spacer(Modifier.height(16.dp))
 
-        OutlinedTextField(email, { email = it }, label = { Text("Email") })
+        OutlinedTextField(
+            value = email,
+            onValueChange = { email = it },
+            label = { Text("Email") },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth()
+        )
         Spacer(Modifier.height(8.dp))
-        OutlinedTextField(password, { password = it }, label = { Text("Password") }, visualTransformation = PasswordVisualTransformation())
+
+        OutlinedTextField(
+            value = password,
+            onValueChange = { password = it },
+            label = { Text("Password") },
+            visualTransformation = PasswordVisualTransformation(),
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth()
+        )
         Spacer(Modifier.height(16.dp))
 
         when (authState) {
             is AuthState.Loading -> CircularProgressIndicator()
-            is AuthState.Error   -> Text(authState.message, color = MaterialTheme.colorScheme.error)
-            else -> {}
+            is AuthState.Error -> Text(
+                authState.message,
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.padding(bottom = 16.dp)
+            )
+            else -> { /* no-op */ }
         }
 
-        Button(onClick = { onSignUp(email, password) }, Modifier.fillMaxWidth()) {
+        Button(
+            onClick = { onSignUp(email, password) },
+            enabled = authState != AuthState.Loading,
+            modifier = Modifier.fillMaxWidth()
+        ) {
             Text("Create account")
         }
         Spacer(Modifier.height(8.dp))
+
         TextButton(onClick = onBack) {
             Text("Back to Sign In")
         }

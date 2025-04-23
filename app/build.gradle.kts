@@ -61,8 +61,6 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
-    implementation ("com.google.firebase:firebase-auth-ktx:22.1.1")
-    implementation(platform("com.google.firebase:firebase-bom:33.12.0"))
     implementation("com.google.firebase:firebase-analytics-ktx")
     implementation("com.google.firebase:firebase-analytics")
     implementation ("androidx.navigation:navigation-compose:2.7.0")
@@ -70,4 +68,12 @@ dependencies {
     debugImplementation ("androidx.compose.ui:ui-tooling:1.6.0")
     implementation("com.google.firebase:firebase-crashlytics")
     implementation("com.google.firebase:firebase-analytics")
+    implementation ("com.google.firebase:firebase-auth-ktx:22.1.1")
+    implementation(platform("com.google.firebase:firebase-bom:33.12.0"))
+    implementation("com.google.firebase:firebase-auth")
+    implementation("androidx.credentials:credentials:1.3.0")
+    implementation("androidx.credentials:credentials-play-services-auth:1.3.0")
+    implementation("com.google.android.libraries.identity.googleid:googleid:1.1.1")
+    implementation ("com.google.android.gms:play-services-auth:20.7.0")
+
 }
