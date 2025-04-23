@@ -1,69 +1,72 @@
 package com.example.firebaseauthentication
 
-import android.app.Activity
 import android.os.Bundle
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.result.contract.ActivityResultContracts
+import androidx.credentials.Credential
+import androidx.credentials.CredentialManager
+import androidx.credentials.GetCredentialRequest
+import androidx.credentials.ClearCredentialStateRequest
+import androidx.credentials.CustomCredential
+import androidx.lifecycle.lifecycleScope
 import com.example.firebaseauthentication.data.AuthViewModel
 import com.example.firebaseauthentication.ui.NavGraph
 import com.example.firebaseauthentication.ui.theme.FirebaseAuthenticationTheme
-import com.google.android.gms.auth.api.signin.GoogleSignIn
-import com.google.android.gms.auth.api.signin.GoogleSignInClient
-import com.google.android.gms.auth.api.signin.GoogleSignInOptions
-import com.google.android.gms.common.api.ApiException
+import com.google.android.libraries.identity.googleid.GetGoogleIdOption
+import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
-    companion object {
-        private const val TAG = "MainActivity"
-    }
-
     private val authViewModel = AuthViewModel()
-    private lateinit var googleSignInClient: GoogleSignInClient
-
-    private val googleSignInLauncher =
-        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-            if (result.resultCode == Activity.RESULT_OK) {
-                val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
-                try {
-                    val account = task.getResult(ApiException::class.java)
-                    account?.idToken?.let { idToken ->
-                        Log.d(TAG, "Google ID token: $idToken")
-                        authViewModel.signInWithGoogle(idToken)
-                    } ?: Log.e(TAG, "Received null ID token")
-                } catch (e: ApiException) {
-                    Log.e(TAG, "GoogleSignIn failed: ${e.statusCode}", e)
-                }
-            } else {
-                Log.w(TAG, "GoogleSignIn canceled or failed with code ${result.resultCode}")
-            }
-        }
+    private lateinit var credentialManager: CredentialManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        // Configure Google Sign-In client
-        val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-            .requestIdToken(getString(R.string.default_web_client_id))
-            .requestEmail()
-            .build()
-        googleSignInClient = GoogleSignIn.getClient(this, gso)
+        credentialManager = CredentialManager.create(baseContext)
 
         setContent {
             FirebaseAuthenticationTheme {
                 NavGraph(
                     authViewModel = authViewModel,
-                    onGoogleSignIn = {
-                        Log.d(TAG, "Launching GoogleSignInClient flow")
-                        googleSignInLauncher.launch(googleSignInClient.signInIntent)
-                    },
-                    onSignOut = {
-                        Log.d(TAG, "Signing out")
-                        authViewModel.signOut()
-                    }
+                    onGoogleSignIn = { launchCredentialManager() },
+                    onSignOut       = { performSignOut() }
                 )
             }
+        }
+    }
+
+    private fun launchCredentialManager() {
+        val googleIdOption = GetGoogleIdOption.Builder()
+            .setServerClientId(getString(R.string.default_web_client_id))
+            .setFilterByAuthorizedAccounts(true)
+            .build()
+
+        val request = GetCredentialRequest.Builder()
+            .addCredentialOption(googleIdOption)
+            .build()
+
+        lifecycleScope.launch {
+            val response = credentialManager.getCredential(this@MainActivity, request)
+            handleSignIn(response.credential)
+        }
+
+    }
+
+    private fun handleSignIn(credential: Credential) {
+        if (credential is CustomCredential &&
+            credential.type == GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL
+        ) {
+            val idToken = GoogleIdTokenCredential
+                .createFrom(credential.data)
+                .idToken
+            authViewModel.signInWithGoogle(idToken)
+        }
+    }
+
+    private fun performSignOut() {
+        authViewModel.signOut()
+        lifecycleScope.launch  {
+            credentialManager.clearCredentialState(ClearCredentialStateRequest())
         }
     }
 }
